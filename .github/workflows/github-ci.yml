@@ -118,4 +118,3 @@ jobs:
         with:
           target: 'http://localhost:5000'
           token: ${{ secrets.GITHUB_TOKEN }}
-          issue_title: 'Security Scan Report'
