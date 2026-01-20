@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -84,25 +84,54 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      image_tag: ${{ steps.set-tag.outputs.tag }} # Przekazujemy tag do następnego joba
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Log in to GHCR
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build and Push Docker image
+        id: set-tag
         run: |
           REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          BRANCH_NAME=$(echo "${GITHUB_REF##*/}" | tr '[:upper:]' '[:lower:]')
-
-          if [ "$BRANCH_NAME" = "main" ]; then
-            TAG="latest"
-          else
-            TAG="beta"
-          fi
-
-          echo "Building image ghcr.io/${{ github.repository_owner }}/$REPO_LOWER:$TAG"
-          docker build -t ghcr.io/${{ github.repository_owner }}/$REPO_LOWER:$TAG .
-          docker push ghcr.io/${{ github.repository_owner }}/$REPO_LOWER:$TAG
+          TAG=$([ "${GITHUB_REF##*/}" = "main" ] && echo "latest" || echo "beta")
+          
+          IMAGE_URL="ghcr.io/${{ github.repository_owner }}/$REPO_LOWER:$TAG"
+          docker build -t $IMAGE_URL .
+          docker push $IMAGE_URL
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+  dast-scan:
+    needs: [docker-build]
+    runs-on: ubuntu-latest
+    permissions:
+        issues: write
+        security-events: write
+    steps:
+        - name: Log in to GHCR
+          run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+  
+        - name: Pull and Run Container
+          run: |
+            REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+            # Pobieramy obraz zbudowany w poprzednim jobie
+            docker pull ghcr.io/${{ github.repository_owner }}/$REPO_LOWER:${{ needs.docker-build.outputs.image_tag }}
+            docker run -d -p 5000:5000 --name web-app ghcr.io/${{ github.repository_owner }}/$REPO_LOWER:${{ needs.docker-build.outputs.image_tag }}
+            sleep 10 # Czekamy aż aplikacja wstanie
+  
+        - name: Run DAST Scan (OWASP ZAP)
+          uses: zaproxy/action-baseline@v0.14.0
+          with:
+            target: 'http://localhost:5000'
+            token: ${{ secrets.GITHUB_TOKEN }}
+            fail_action: false
+            artifact_name: 'zap-report'
+  
+        - name: Upload ZAP Report
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: zap-scan-report
+            path: report_html.html
