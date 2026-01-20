@@ -84,6 +84,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+      issues: write
+      security-events: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
