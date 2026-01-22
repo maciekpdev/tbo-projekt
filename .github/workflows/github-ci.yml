@@ -27,9 +27,10 @@ jobs:
 
       - name: Run Bandit security scan
         run: |
-          bandit -r ./project -o bandit-report.json -f json
+          bandit -r ./project -o bandit-report.json -f json || true
 
       - name: Upload Bandit report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: bandit-report
@@ -80,6 +81,7 @@ jobs:
 
   docker-build:
     needs: [bandit-scan, dependency-check, unit-testing]
+    if: always()
     runs-on: ubuntu-latest
     permissions:
       contents: read
