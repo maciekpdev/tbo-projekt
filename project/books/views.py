@@ -1,4 +1,4 @@
-from flask import render_template, Blueprint, request, redirect, url_for, jsonify
+from flask import render_template, render_template_string, Blueprint, request, redirect, url_for, jsonify
 from project import db
 from project.books.models import Book
 from project.books.forms import CreateBook
@@ -138,4 +138,23 @@ def get_book_details(book_name):
             return jsonify(book=book_data)
         else:
             print('Book not found')
-            return jsonify({'error': 'Book not found'}), 404
+            # We wanted to show some nice error page with book name, what could possibly go wrong?
+            error_html = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Book Not Found</title>
+                <style>
+                    body {{ font-family: Arial; margin: 40px; }}
+                    .error {{ color: #d32f2f; }}
+                </style>
+            </head>
+            <body>
+                <h1 class="error">Book Not Found</h1>
+                <p>The book <strong>{book_name}</strong> does not exist in our database.</p>
+                <p>You searched for: <em>{book_name}</em></p>
+                <a href="/books">← Back to Books</a>
+            </body>
+            </html>
+            """
+            return render_template_string(error_html), 404
