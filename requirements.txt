@@ -16,3 +16,4 @@ typing_extensions==4.8.0
 Werkzeug==2.3.7
 WTForms==3.0.1
 pytest==8.2.2
+requests==2.0.0  # VULNERABLE: Contains CVE-2014-1829, CVE-2014-1830 (SSL verification bypass)
