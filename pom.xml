@@ -25,6 +25,14 @@
                         <format>html</format>
                         <format>json</format>
                     </formats>
+                    <analyzers>
+                        <analyzer>
+                            <enabled>true</enabled>
+                        </analyzer>
+                    </analyzers>
+                    <scanSet>
+                        <file>requirements.txt</file>
+                    </scanSet>
                 </configuration>
             </plugin>
         </plugins>

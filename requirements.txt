@@ -16,4 +16,4 @@ typing_extensions==4.8.0
 Werkzeug==2.3.7
 WTForms==3.0.1
 pytest==8.2.2
-urllib3==1.24.1  # VULNERABLE: Contains CVE-2019-11324 (Certificate validation bypass)
+cryptography==3.4.8  # VULNERABLE: Contains CVE-2023-23931 (Denial of service vulnerability)
