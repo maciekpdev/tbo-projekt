@@ -2,7 +2,7 @@ from flask import render_template, render_template_string, Blueprint, request, r
 from project import db
 from project.books.models import Book
 from project.books.forms import CreateBook
-
+import os 
 
 # Blueprint for books
 books = Blueprint('books', __name__, template_folder='templates', url_prefix='/books')
@@ -11,10 +11,28 @@ books = Blueprint('books', __name__, template_folder='templates', url_prefix='/b
 # Route to display books in HTML
 @books.route('/', methods=['GET'])
 def list_books():
-    # Fetch all books from the database
+
+    # VULNERABLE: Path Traversal
+    # We use path.join without filename verification
+    # If user adds "?file=../../project/__init__.py" it will show the file with a secret 
+    filename = request.args.get('file', 'books_caption.txt')
+    caption = None 
+
+    try:
+        static_path = os.path.join(os.getcwd(), 'project', 'static')
+        target_path = os.path.join(static_path, filename)
+        if os.path.exists(target_path):
+            with open(target_path, 'r', encoding='utf-8') as f:
+                caption = f.read()
+        
+    except Exception as e:
+        print(f"Could not read file {filename}: {e}")
+    
+    # Fetch all books from the database 
     books = Book.query.all()
+
     print('Books page accessed')
-    return render_template('books.html', books=books)
+    return render_template('books.html', books=books, file_content=caption)
 
 
 # Route to fetch books in JSON format
