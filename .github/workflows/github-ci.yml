@@ -121,7 +121,7 @@ jobs:
       - name: Run ZAP Full Scan
         uses: zaproxy/action-full-scan@v0.12.0
         with:
-          target: 'http://localhost:5000/books/?file=../../project/__init__.py'
+          target: 'http://localhost:5000/books/?file=description.txt'
           token: ${{ secrets.GITHUB_TOKEN }}
           fail_action: true
           cmd_options: '-a'
