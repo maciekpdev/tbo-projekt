@@ -1,3 +1,48 @@
+
+ZAD 1
+
+
+------DAST--------
+
+W celu zweryfikowania odporności aplikacji oraz skuteczności potoku CICD, wdrożono skaner dynamiczny OWASP ZAP w trybie Full Scan (Active Scan).
+1. Cel testu
+
+Udowodnienie, że mechanizmy bezpieczeństwa w procesie CICD potrafią wykryć podatność typu Path Traversal w działającej instancji aplikacji (uruchomionej w kontenerze Docker), zanim zostanie ona dopuszczona do rejestru obrazów.
+2. Wykorzystany Exploit (Path Traversal)
+
+W gałęzi testowej wprowadzono podatny kod w module książek, który pozwala na odczyt dowolnego pliku z serwera poprzez parametr URL:
+
+    Adres testowy: http://localhost:5000/books/?file=../../project/__init__.py
+
+    Mechanizm: Brak walidacji wejścia pozwala na użycie sekwencji ../, co umożliwia wyjście poza katalog static i odczytanie plików konfiguracyjnych aplikacji.
+
+3. Wynik skanowania ZAP
+
+Podczas wykonywania kroku dast-scan, narzędzie OWASP ZAP przeprowadziło aktywny atak (fuzzing) na parametr file.
+
+Kluczowe znalezisko w raporcie:
+
+    Alert: Path Traversal
+
+    Ryzyko (Risk Level): High / Medium (w zależności od konfiguracji)
+
+    Dowód (Evidence): Skaner pomyślnie wstrzyknął ładunek %2Fetc%2Fpasswd oraz ścieżki względne, otrzymując w odpowiedzi (HTTP 200 OK) zawartość plików, które nie powinny być publicznie dostępne.
+
+4. Reakcja procesu CICD (Blokada wdrożenia)
+
+Zgodnie z zaprojektowanym procesem, wykrycie podatności przez ZAP skutkowało natychmiastowym przerwaniem potoku:
+
+    Status Joba: Failed
+
+    Kod wyjścia: Exit Code 2
+
+    Skutek: Obraz aplikacji z tagiem :beta nie został uznany za bezpieczny, a wdrożenie zostało zablokowane.
+
+    Wniosek: Testy DAST poprawnie zidentyfikowały lukę bezpieczeństwa w działającym środowisku, co w połączeniu z testami SAST (Bandit) zapewnia pełną kontrolę nad bezpieczeństwem kodu w procesie CICD.
+
+
+
+
 To run app
 
 ```shell
