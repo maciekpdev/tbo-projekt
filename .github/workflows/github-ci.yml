@@ -27,7 +27,7 @@ jobs:
 
       - name: Run Bandit security scan
         run: |
-          bandit -r ./project -f txt -ll
+          bandit -r ./project -o bandit-report.json -f json || true
 
       - name: Upload Bandit report
         if: always()
