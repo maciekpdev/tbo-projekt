@@ -1,20 +1,44 @@
 // Function to handle search
 const searchCustomers = () => {
-    let input, filter, table, tr, td, i, txtValue;
-    input = document.getElementById("searchInput");
-    filter = input.value.toLowerCase();
-    table = document.querySelector(".table");
-    tr = table.getElementsByTagName("tr");
-    for (i = 1; i < tr.length; i++) {
-        td = tr[i].getElementsByTagName("td")[0]; // Use only the first column (names)
-        if (td) {
-            txtValue = td.textContent || td.innerText;
-            // Check if the text contains the search filter
-            tr[i].style.display = txtValue.toLowerCase().includes(filter) ? "" : "none";
+    const input = document.getElementById("searchInput");
+    const searchValue = input.value;
+    
+    // Use backend endpoint with SQL Injection vulnerability
+    $.ajax({
+        url: '/customers/json',
+        method: 'GET',
+        data: { name: searchValue },
+        success: (response) => {
+            // Update table with search results
+            const tbody = document.querySelector('.table tbody');
+            if (tbody) {
+                tbody.innerHTML = '';
+                if (response.customers && response.customers.length > 0) {
+                    response.customers.forEach(customer => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${customer.name}</td>
+                            <td>${customer.city}</td>
+                            <td>${customer.age}</td>
+                            <td>
+                                <a href="#" class="btn btn-warning btn-sm" onclick="editCustomer(${customer.id})">Edit</a>
+                                <button class="btn btn-danger btn-sm" onclick="deleteCustomer(${customer.id})">Delete</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                }
+            }
+        },
+        error: (error) => {
+            console.log('Search error:', error);
+            // Show error if SQL injection attempt fails
+            if (error.responseJSON && error.responseJSON.details) {
+                alert('Search error: ' + error.responseJSON.details);
+            }
         }
-    }
+    });
 };
-
 
 // Event listener for search input
 document.getElementById("searchInput").addEventListener("input", searchCustomers);

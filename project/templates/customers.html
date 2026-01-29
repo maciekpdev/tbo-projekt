@@ -30,7 +30,7 @@
             <!-- Loop through customers and display each customer -->
             {% for customer in customers %}
             <tr>
-                <td>{{ customer.name | safe }}</td>
+                <td><a href="/customers/details/{{ customer.id }}">{{ customer.name | safe }}</a></td>
                 <td>{{ customer.city | safe }}</td>  <!-- Display 'city' instead of 'author' -->
                 <td>{{ customer.age }}</td>  <!-- Display 'age' -->
                 <td>

@@ -25,6 +25,25 @@ def list_customers_json():
     return jsonify(customers=customer_list)
 
 
+
+@customers.route('/details/<int:customer_id>', methods=['GET'])
+def get_customer_details(customer_id):
+    
+    try:
+        customer = Customer.query.get(customer_id)
+        if not customer:
+            raise ValueError(f"Customer with ID {customer_id} not found")
+        return jsonify({
+            'id': customer.id,
+            'name': customer.name,
+            'city': customer.city,
+            'age': customer.age
+        })
+    except Exception as e:
+        import traceback
+        return f"Error: {str(e)}\n\nStack trace:\n{traceback.format_exc()}", 500
+
+
 # Route to create a new customer
 @customers.route('/create', methods=['POST', 'GET'])
 def create_customer():

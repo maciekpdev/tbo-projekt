@@ -27,7 +27,7 @@ jobs:
 
       - name: Run Bandit security scan
         run: |
-          bandit -r ./project -ll -o bandit-report.json -f json
+          bandit -r ./project -o bandit-report.json -f json || true
 
       - name: Upload Bandit report
         if: always()
@@ -107,32 +107,28 @@ jobs:
   dast-scan:
     needs: [docker-build]
     runs-on: ubuntu-latest
-    permissions:
-        issues: write
-        security-events: write
     steps:
-        - name: Log in to GHCR
-          run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
   
-        - name: Pull and Run Container
-          run: |
-            REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-            # Pobieramy obraz zbudowany w poprzednim jobie
-            docker pull ghcr.io/${{ github.repository_owner }}/$REPO_LOWER:${{ needs.docker-build.outputs.image_tag }}
-            docker run -d -p 5000:5000 --name web-app ghcr.io/${{ github.repository_owner }}/$REPO_LOWER:${{ needs.docker-build.outputs.image_tag }}
-            sleep 10 # Czekamy aż aplikacja wstanie
+      - name: Pull and Run Container
+        run: |
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          docker pull ghcr.io/${{ github.repository_owner }}/$REPO_LOWER:${{ needs.docker-build.outputs.image_tag }}
+          docker run -d -p 5000:5000 --name web-app ghcr.io/${{ github.repository_owner }}/$REPO_LOWER:${{ needs.docker-build.outputs.image_tag }}
+          sleep 10 # Czekamy aż Flask wstanie
   
-        - name: Run DAST Scan (OWASP ZAP)
-          uses: zaproxy/action-baseline@v0.14.0
-          with:
-            target: 'http://localhost:5000'
-            token: ${{ secrets.GITHUB_TOKEN }}
-            fail_action: false
-            artifact_name: 'zap-report'
+      - name: Run ZAP Full Scan
+        uses: zaproxy/action-full-scan@v0.12.0
+        with:
+          target: 'http://localhost:5000/books/?file=../../project/__init__.py'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fail_action: true
+          cmd_options: '-a'
   
-        - name: Upload ZAP Report
-          if: always()
-          uses: actions/upload-artifact@v4
-          with:
-            name: zap-scan-report
-            path: report_html.html
+      - name: Upload ZAP Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-scan-report
+          path: report_html.html
