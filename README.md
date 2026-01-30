@@ -41,6 +41,7 @@ W celu zweryfikowania odporności aplikacji oraz skuteczności potoku CICD, wdro
 1. Cel testu
 
 Udowodnienie, że mechanizmy bezpieczeństwa w procesie CICD potrafią wykryć podatność typu Path Traversal w działającej instancji aplikacji (uruchomionej w kontenerze Docker), zanim zostanie ona dopuszczona do rejestru obrazów.
+
 2. Wykorzystany Exploit (Path Traversal)
 
 W gałęzi testowej wprowadzono podatny kod w module książek, który pozwala na odczyt dowolnego pliku z serwera poprzez parametr URL:
