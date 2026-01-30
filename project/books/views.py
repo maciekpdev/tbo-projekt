@@ -1,8 +1,7 @@
-from flask import render_template, render_template_string, Blueprint, request, redirect, url_for, jsonify, Markup
+from flask import render_template, Blueprint, request, redirect, url_for, jsonify
 from project import db
 from project.books.models import Book
-from project.books.forms import CreateBook
-import os 
+from project.books.forms import CreateBook 
 
 # Blueprint for books
 books = Blueprint('books', __name__, template_folder='templates', url_prefix='/books')
@@ -11,28 +10,11 @@ books = Blueprint('books', __name__, template_folder='templates', url_prefix='/b
 # Route to display books in HTML
 @books.route('/', methods=['GET'])
 def list_books():
-
-    # VULNERABLE: Path Traversal
-    # We use path.join without filename verification
-    # If user adds "?file=../../project/__init__.py" it will show the file with a secret 
-    filename = request.args.get('file', 'books_caption.txt')
-    caption = None 
-
-    try:
-        static_path = os.path.join(os.getcwd(), 'project', 'static')
-        target_path = os.path.join(static_path, filename)
-        if os.path.exists(target_path):
-            with open(target_path, 'r', encoding='utf-8') as f:
-                caption = f.read()
-        
-    except Exception as e:
-        print(f"Could not read file {filename}: {e}")
-    
     # Fetch all books from the database 
     books = Book.query.all()
 
     print('Books page accessed')
-    return render_template('books.html', books=books, file_content=caption)
+    return render_template('books.html', books=books)
 
 
 # Route to fetch books in JSON format
@@ -156,28 +138,4 @@ def get_book_details(book_name):
             return jsonify(book=book_data)
         else:
             print('Book not found')
-            # VULNERABLE: Server-Side Template Injection (SSTI)
-            # We wanted to show some nice error page with book name, what could possibly go wrong?
-            # Mistake: User input directly inserted into template string allows Jinja2 code execution
-            error_html = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Book Not Found</title>
-                <style>
-                    body {{ font-family: Arial; margin: 40px; }}
-                    .error {{ color: #d32f2f; }}
-                </style>
-            </head>
-            <body>
-                <h1 class="error">Book Not Found</h1>
-                <p>The book <strong>{book_name}</strong> does not exist in our database.</p>
-                <p>You searched for: <em>{book_name}</em></p>
-                <a href="/books">← Back to Books</a>
-            </body>
-            </html>
-            """
-            # VULNERABLE: book_name is interpolated by f-string into template string
-            # If user enters {{7*7}}, f-string creates {{7*7}} in string, then Jinja2 executes it
-            # Using Markup to ensure Jinja2 processes the interpolated content as template code
-            return render_template_string(Markup(error_html)), 404
+            return jsonify({'error': 'Book not found'}), 404
